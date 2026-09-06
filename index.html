@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HTML Viewer</title>
+<style>
+  :root {
+    --bg-1: #0b1020;
+    --bg-2: #131a33;
+    --card: rgba(255, 255, 255, 0.06);
+    --card-border: rgba(255, 255, 255, 0.12);
+    --text: #e8ecf8;
+    --muted: #9aa6c7;
+    --accent: #6d8dff;
+    --accent-2: #9a6dff;
+    --ok: #37d67a;
+    --err: #ff6b6b;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--text);
+    background: radial-gradient(1200px 800px at 15% -10%, #1b2a63 0%, transparent 55%),
+                radial-gradient(1000px 700px at 110% 10%, #3a1d63 0%, transparent 50%),
+                linear-gradient(160deg, var(--bg-1), var(--bg-2));
+    min-height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 620px;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    padding: 28px;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 6px;
+  }
+
+  .logo {
+    width: 46px;
+    height: 46px;
+    border-radius: 13px;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    box-shadow: 0 8px 22px rgba(109, 141, 255, 0.4);
+    flex: 0 0 auto;
+  }
+
+  .logo svg { width: 26px; height: 26px; }
+
+  h1 {
+    font-size: 22px;
+    margin: 0;
+    letter-spacing: 0.2px;
+  }
+
+  .subtitle {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .drop {
+    margin-top: 22px;
+    border: 2px dashed rgba(255, 255, 255, 0.22);
+    border-radius: 16px;
+    padding: 34px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.18s ease, background 0.18s ease, transform 0.12s ease;
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .drop:hover { border-color: rgba(255, 255, 255, 0.38); }
+
+  .drop.dragover {
+    border-color: var(--accent);
+    background: rgba(109, 141, 255, 0.12);
+    transform: scale(1.01);
+  }
+
+  .drop .big {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 6px;
+  }
+
+  .drop .small {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .upload-icon {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 12px;
+    opacity: 0.85;
+    color: var(--accent);
+  }
+
+  .row {
+    margin-top: 18px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+  }
+
+  button {
+    font: inherit;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 18px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: transform 0.1s ease, filter 0.15s ease, opacity 0.15s;
+  }
+
+  button:active { transform: translateY(1px); }
+
+  .btn-primary {
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    box-shadow: 0 10px 24px rgba(109, 141, 255, 0.35);
+  }
+
+  .btn-primary:hover { filter: brightness(1.07); }
+
+  .btn-ghost {
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--card-border);
+  }
+
+  .btn-ghost:hover { background: rgba(255, 255, 255, 0.14); }
+
+  .options {
+    margin-top: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted);
+    font-size: 13.5px;
+    user-select: none;
+  }
+
+  .options input { width: 17px; height: 17px; accent-color: var(--accent); cursor: pointer; }
+  .options label { cursor: pointer; }
+
+  .file-chip {
+    margin-top: 18px;
+    display: none;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+  }
+
+  .file-chip.show { display: flex; }
+
+  .file-chip .dot {
+    width: 34px; height: 34px; border-radius: 9px;
+    display: grid; place-items: center;
+    background: rgba(109, 141, 255, 0.18);
+    color: var(--accent);
+    font-size: 11px; font-weight: 700; letter-spacing: 0.3px;
+    flex: 0 0 auto;
+  }
+
+  .file-chip .meta { min-width: 0; }
+  .file-chip .name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .file-chip .size { font-size: 12px; color: var(--muted); }
+
+  .status {
+    margin-top: 16px;
+    font-size: 13.5px;
+    min-height: 20px;
+    line-height: 1.45;
+    color: var(--muted);
+  }
+  .status.ok { color: var(--ok); }
+  .status.err { color: var(--err); }
+
+  .preview-wrap { margin-top: 18px; display: none; }
+  .preview-wrap.show { display: block; }
+  .preview-wrap .label {
+    font-size: 12px; color: var(--muted); margin-bottom: 8px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .preview-wrap .label-actions { display: flex; gap: 8px; }
+  .preview-wrap .label-actions button {
+    padding: 6px 12px; font-size: 12px; line-height: 1;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-icon { width: 14px; height: 14px; }
+  .preview-wrap .icon-compress { display: none; }
+  .preview-wrap.is-fullscreen .icon-expand { display: none; }
+  .preview-wrap.is-fullscreen .icon-compress { display: inline; }
+  .preview-wrap iframe {
+    width: 100%; height: 340px; border-radius: 12px;
+    border: 1px solid var(--card-border); background: #fff;
+  }
+
+  /* Fullscreen preview (native Fullscreen API on the preview container) */
+  .preview-wrap:fullscreen {
+    display: flex; flex-direction: column;
+    width: 100%; height: 100%; margin: 0; padding: 16px;
+    background: var(--bg-1);
+  }
+  .preview-wrap:fullscreen .label { margin-bottom: 12px; }
+  .preview-wrap:fullscreen iframe { flex: 1 1 auto; height: auto; border-radius: 10px; }
+
+  .hint {
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--muted);
+    font-size: 12.5px;
+    line-height: 1.6;
+  }
+  .hint strong { color: var(--text); font-weight: 600; }
+  .hint code {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 1px 6px; border-radius: 6px; font-size: 12px;
+  }
+
+  .foot { text-align: center; color: var(--muted); font-size: 12px; margin-top: 16px; }
+
+  @media (max-width: 480px) {
+    .card { padding: 22px; }
+    h1 { font-size: 20px; }
+    .row button { flex: 1 1 auto; }
+  }
+</style>
+</head>
+<body>
+  <main class="app">
+    <section class="card">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6"></polyline>
+            <polyline points="8 6 2 12 8 18"></polyline>
+          </svg>
+        </div>
+        <div>
+          <h1>HTML Viewer</h1>
+          <p class="subtitle">Upload an <code>.html</code> file and open it in a new <code>about:blank</code> window. Works right in the browser &mdash; great for Chromebooks.</p>
+        </div>
+      </div>
+
+      <div class="drop" id="dropZone" tabindex="0" role="button" aria-label="Upload HTML file">
+        <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        <p class="big">Drag &amp; drop your HTML file here</p>
+        <p class="small">or click anywhere in this box to browse</p>
+      </div>
+
+      <input type="file" id="fileInput" accept=".html,.htm,text/html" hidden />
+
+      <div class="row">
+        <button class="btn-primary" id="browseBtn" type="button">Choose file</button>
+        <button class="btn-ghost" id="reopenBtn" type="button" disabled>Open last file again</button>
+      </div>
+
+      <div class="options">
+        <input type="checkbox" id="previewMode" />
+        <label for="previewMode">Preview inside this page instead of a new window</label>
+      </div>
+
+      <div class="file-chip" id="fileChip">
+        <div class="dot" id="fileExt">HTML</div>
+        <div class="meta">
+          <div class="name" id="fileName">—</div>
+          <div class="size" id="fileSize">—</div>
+        </div>
+      </div>
+
+      <div class="status" id="status"></div>
+
+      <div class="preview-wrap" id="previewWrap">
+        <div class="label">
+          <span>In-page preview</span>
+          <span class="label-actions">
+            <button class="btn-ghost" id="fullscreenPreview" type="button" aria-pressed="false" title="Toggle fullscreen">
+              <svg class="btn-icon icon-expand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+              </svg>
+              <svg class="btn-icon icon-compress" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+              </svg>
+              <span id="fullscreenLabel">Fullscreen</span>
+            </button>
+            <button class="btn-ghost" id="closePreview" type="button" title="Close preview">Close</button>
+          </span>
+        </div>
+        <iframe id="previewFrame" title="HTML preview" sandbox="allow-scripts allow-modals allow-forms allow-popups"></iframe>
+      </div>
+
+      <div class="hint">
+        <strong>Tip:</strong> If a new window doesn't appear, your browser blocked the popup.
+        Allow popups for this page (tap the icon at the right of the address bar), or tick
+        <em>&ldquo;Preview inside this page&rdquo;</em> above. The opened page is a real
+        <code>about:blank</code> window, so scripts inside your file will run.
+      </div>
+    </section>
+
+    <p class="foot">No upload to any server &mdash; everything happens locally in your browser.</p>
+  </main>
+
+<script>
+(function () {
+  "use strict";
+
+  var fileInput   = document.getElementById("fileInput");
+  var dropZone    = document.getElementById("dropZone");
+  var browseBtn   = document.getElementById("browseBtn");
+  var reopenBtn   = document.getElementById("reopenBtn");
+  var previewMode = document.getElementById("previewMode");
+  var statusEl    = document.getElementById("status");
+  var fileChip    = document.getElementById("fileChip");
+  var fileName    = document.getElementById("fileName");
+  var fileSize    = document.getElementById("fileSize");
+  var fileExt     = document.getElementById("fileExt");
+  var previewWrap = document.getElementById("previewWrap");
+  var previewFrame= document.getElementById("previewFrame");
+  var closePreview= document.getElementById("closePreview");
+  var fsBtn       = document.getElementById("fullscreenPreview");
+  var fsLabel     = document.getElementById("fullscreenLabel");
+
+  var lastHtml = null;   // last file contents (string)
+  var lastName = null;   // last file name
+
+  /* ---------- helpers ---------- */
+
+  function setStatus(msg, type) {
+    statusEl.textContent = msg || "";
+    statusEl.className = "status" + (type ? " " + type : "");
+  }
+
+  function formatBytes(bytes) {
+    if (bytes === 0) return "0 B";
+    var units = ["B", "KB", "MB", "GB"];
+    var i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+    return (bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1) + " " + units[i];
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function extOf(name) {
+    var m = /\.([a-z0-9]+)$/i.exec(name || "");
+    return (m ? m[1] : "FILE").toUpperCase().slice(0, 5);
+  }
+
+  function showChip(file) {
+    fileName.textContent = file.name;
+    fileSize.textContent = formatBytes(file.size);
+    fileExt.textContent = extOf(file.name);
+    fileChip.classList.add("show");
+  }
+
+  /* ---------- core: write HTML into a fresh about:blank window ---------- */
+
+  // Open a blank window. MUST be called synchronously inside a real user
+  // gesture (click / drop) so the browser does not block it as a popup.
+  // Returns the window object, or null if the popup was blocked.
+  function openBlankWindow(name) {
+    var win = null;
+    try { win = window.open("about:blank", "_blank"); } catch (e) { win = null; }
+    if (!win || win.closed || typeof win.document === "undefined") return null;
+
+    // Loading state shown until the real content is written.
+    try {
+      win.document.open();
+      win.document.write(
+        '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Loading…</title></head>' +
+        '<body style="margin:0;height:100vh;display:flex;align-items:center;justify-content:center;' +
+        'background:#0b1020;color:#e8ecf8;font-family:system-ui,sans-serif;">' +
+        '<p>Loading ' + escapeHtml(name || "file") + '…</p></body></html>'
+      );
+      win.document.close();
+    } catch (e) { /* ignore – we rewrite below anyway */ }
+    return win;
+  }
+
+  // Write the final document into an already-open window. document.open()
+  // resets it, then document.write() runs any inline <script> tags.
+  function writeToWindow(win, html) {
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    try { win.focus(); } catch (e) {}
+  }
+
+  // Convenience: open + write in one synchronous call (used by "Open last file
+  // again", which already has the HTML in memory inside a click gesture).
+  function openInNewWindow(html, name) {
+    var win = openBlankWindow(name);
+    if (!win) {
+      setStatus("Popup blocked. Allow popups for this page, or use in-page preview. Showing preview below.", "err");
+      renderInPagePreview(html);
+      return false;
+    }
+    writeToWindow(win, html);
+    return true;
+  }
+
+  function renderInPagePreview(html) {
+    previewFrame.srcdoc = html;
+    previewWrap.classList.add("show");
+  }
+
+  /* ---------- file handling ---------- */
+
+  function handleFile(file) {
+    if (!file) return;
+
+    var looksHtml = /\.(html?|xhtml|svg)$/i.test(file.name) ||
+                    (file.type && /html|svg/i.test(file.type));
+
+    showChip(file);
+
+    // Open the new window NOW — synchronously, inside the user gesture — so the
+    // browser allows it. Reading is async and a large file could otherwise
+    // outlast the user-activation window and get blocked as a popup.
+    var win = null;
+    var popupBlocked = false;
+    if (!previewMode.checked) {
+      win = openBlankWindow(file.name);
+      if (!win) popupBlocked = true; // blocked → fall back to in-page preview
+    }
+
+    if (!looksHtml) {
+      setStatus('"' + file.name + '" doesn\'t look like an HTML file. Trying to open it anyway…');
+    } else {
+      setStatus('Reading "' + file.name + '"…');
+    }
+
+    var reader = new FileReader();
+
+    reader.onload = function () {
+      lastHtml = String(reader.result);
+      lastName = file.name;
+      reopenBtn.disabled = false;
+
+      if (win) {
+        writeToWindow(win, lastHtml);
+        setStatus('Opened "' + file.name + '" in a new about:blank window.', "ok");
+      } else {
+        renderInPagePreview(lastHtml);
+        if (popupBlocked) {
+          setStatus("Popup blocked. Allow popups for this page, or use in-page preview. Showing preview below.", "err");
+        } else {
+          setStatus('Loaded "' + file.name + '" in the in-page preview.', "ok");
+        }
+      }
+    };
+
+    reader.onerror = function () {
+      if (win) {
+        try {
+          win.document.open();
+          win.document.write('<!DOCTYPE html><html><body style="font-family:system-ui;padding:2rem;color:#b00000;">Sorry, that file could not be read.</body></html>');
+          win.document.close();
+        } catch (e) {}
+      }
+      setStatus("Sorry, that file could not be read.", "err");
+    };
+
+    reader.readAsText(file);
+  }
+
+  function replayLast() {
+    if (lastHtml === null) return;
+    if (previewMode.checked) {
+      renderInPagePreview(lastHtml);
+      setStatus('Re-opened "' + lastName + '" in the in-page preview.', "ok");
+    } else {
+      var ok = openInNewWindow(lastHtml, lastName);
+      if (ok) setStatus('Re-opened "' + lastName + '" in a new about:blank window.', "ok");
+    }
+  }
+
+  /* ---------- events ---------- */
+
+  function triggerBrowse() { fileInput.click(); }
+
+  browseBtn.addEventListener("click", triggerBrowse);
+  dropZone.addEventListener("click", triggerBrowse);
+  dropZone.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); triggerBrowse(); }
+  });
+
+  reopenBtn.addEventListener("click", replayLast);
+
+  closePreview.addEventListener("click", function () {
+    if (isFullscreen()) exitFullscreen();
+    previewWrap.classList.remove("show");
+    previewWrap.classList.remove("is-fullscreen");
+    previewFrame.srcdoc = "";
+  });
+
+  /* ---------- fullscreen for the in-page preview ---------- */
+
+  function isFullscreen() {
+    var el = document.fullscreenElement || document.webkitFullscreenElement;
+    return el === previewWrap;
+  }
+
+  function enterFullscreen() {
+    var p;
+    if (previewWrap.requestFullscreen) p = previewWrap.requestFullscreen();
+    else if (previewWrap.webkitRequestFullscreen) previewWrap.webkitRequestFullscreen();
+    if (p && p.catch) p.catch(function () { /* not allowed / interrupted */ });
+  }
+
+  function exitFullscreen() {
+    var p;
+    if (document.exitFullscreen) p = document.exitFullscreen();
+    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+    if (p && p.catch) p.catch(function () { /* ignore */ });
+  }
+
+  function toggleFullscreen() {
+    if (isFullscreen()) exitFullscreen();
+    else enterFullscreen();
+  }
+
+  function syncFullscreenUi() {
+    var on = isFullscreen();
+    if (fsLabel) fsLabel.textContent = on ? "Exit fullscreen" : "Fullscreen";
+    if (fsBtn) {
+      fsBtn.setAttribute("aria-pressed", on ? "true" : "false");
+      fsBtn.title = on ? "Exit fullscreen" : "Toggle fullscreen";
+    }
+    previewWrap.classList.toggle("is-fullscreen", on);
+  }
+
+  fsBtn.addEventListener("click", toggleFullscreen);
+  document.addEventListener("fullscreenchange", syncFullscreenUi);
+  document.addEventListener("webkitfullscreenchange", syncFullscreenUi);
+
+  fileInput.addEventListener("change", function (e) {
+    handleFile(e.target.files && e.target.files[0]);
+    // reset so selecting the same file again still fires "change"
+    fileInput.value = "";
+  });
+
+  ["dragenter", "dragover"].forEach(function (evt) {
+    dropZone.addEventListener(evt, function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      dropZone.classList.add("dragover");
+    });
+  });
+
+  ["dragleave", "dragend"].forEach(function (evt) {
+    dropZone.addEventListener(evt, function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      dropZone.classList.remove("dragover");
+    });
+  });
+
+  dropZone.addEventListener("drop", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    dropZone.classList.remove("dragover");
+    var dt = e.dataTransfer;
+    if (dt && dt.files && dt.files.length) {
+      handleFile(dt.files[0]);
+    }
+  });
+
+  // Prevent the browser from navigating away if a file is dropped outside the zone.
+  ["dragover", "drop"].forEach(function (evt) {
+    window.addEventListener(evt, function (e) { e.preventDefault(); });
+  });
+
+  setStatus("");
+})();
+</script>
+</body>
+</html>
