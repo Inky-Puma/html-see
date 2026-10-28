@@ -1,0 +1,9 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "inky-puma-github-io",
+  "compatibility_date": "2026-10-28",
+  // The site is one static index.html at the repo root; no build step needed.
+  "assets": {
+    "directory": "./"
+  }
+}

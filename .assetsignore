@@ -1,0 +1,12 @@
+# Files in the assets directory that should not be published.
+.git
+.github
+.base44
+.wrangler
+node_modules
+package.json
+package-lock.json
+wrangler.jsonc
+docker-compose.base44.yml
+AGENTS.md
+README.md

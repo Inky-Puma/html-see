@@ -253,6 +253,61 @@
 
   .foot { text-align: center; color: var(--muted); font-size: 12px; margin-top: 16px; }
 
+  .tabs {
+    margin-top: 22px;
+    display: flex;
+    gap: 6px;
+    padding: 5px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+  }
+
+  .tab {
+    flex: 1 1 0;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .tab:hover { color: var(--text); }
+
+  .tab[aria-selected="true"] {
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    box-shadow: 0 8px 20px rgba(109, 141, 255, 0.3);
+  }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .code-area {
+    margin-top: 18px;
+    width: 100%;
+    min-height: 190px;
+    resize: vertical;
+    padding: 14px;
+    border-radius: 14px;
+    border: 1px solid var(--card-border);
+    background: rgba(0, 0, 0, 0.28);
+    color: var(--text);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .code-area::placeholder { color: var(--muted); }
+
+  .code-area:focus {
+    outline: 2px solid rgba(109, 141, 255, 0.55);
+    outline-offset: 1px;
+    border-color: transparent;
+  }
+
+
   @media (max-width: 480px) {
     .card { padding: 22px; }
     h1 { font-size: 20px; }
@@ -272,26 +327,43 @@
         </div>
         <div>
           <h1>HTML Viewer</h1>
-          <p class="subtitle">Upload an <code>.html</code> file and open it in a new <code>about:blank</code> window. Works right in the browser &mdash; great for Chromebooks.</p>
+          <p class="subtitle">Upload an <code>.html</code> file or paste some code, then open it in a new <code>about:blank</code> window. Works right in the browser &mdash; great for Chromebooks.</p>
         </div>
       </div>
 
-      <div class="drop" id="dropZone" tabindex="0" role="button" aria-label="Upload HTML file">
-        <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-          <polyline points="17 8 12 3 7 8"></polyline>
-          <line x1="12" y1="3" x2="12" y2="15"></line>
-        </svg>
-        <p class="big">Drag &amp; drop your HTML file here</p>
-        <p class="small">or click anywhere in this box to browse</p>
+      <div class="tabs" role="tablist" aria-label="Input method">
+        <button class="tab" id="tabUpload" type="button" role="tab" aria-selected="true" aria-controls="panelUpload">Upload file</button>
+        <button class="tab" id="tabPaste" type="button" role="tab" aria-selected="false" aria-controls="panelPaste">Paste code</button>
       </div>
 
-      <input type="file" id="fileInput" accept=".html,.htm,text/html" hidden />
+      <div class="panel active" id="panelUpload" role="tabpanel" aria-labelledby="tabUpload">
+        <div class="drop" id="dropZone" tabindex="0" role="button" aria-label="Upload HTML file">
+          <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          <p class="big">Drag &amp; drop your HTML file here</p>
+          <p class="small">or click anywhere in this box to browse</p>
+        </div>
 
-      <div class="row">
-        <button class="btn-primary" id="browseBtn" type="button">Choose file</button>
-        <button class="btn-ghost" id="reopenBtn" type="button" disabled>Open last file again</button>
+        <input type="file" id="fileInput" accept=".html,.htm,text/html" hidden />
+
+        <div class="row">
+          <button class="btn-primary" id="browseBtn" type="button">Choose file</button>
+          <button class="btn-ghost" id="reopenBtn" type="button" disabled>Open last file again</button>
+        </div>
       </div>
+
+      <div class="panel" id="panelPaste" role="tabpanel" aria-labelledby="tabPaste">
+        <textarea class="code-area" id="codeArea" spellcheck="false" aria-label="HTML code"
+          placeholder="Paste your HTML here&hellip;"></textarea>
+        <div class="row">
+          <button class="btn-primary" id="pasteOpenBtn" type="button">Open in about:blank</button>
+        </div>
+      </div>
+
+
 
       <div class="options">
         <input type="checkbox" id="previewMode" />
@@ -365,6 +437,13 @@
   var fsBtn       = document.getElementById("fullscreenPreview");
   var fsLabel     = document.getElementById("fullscreenLabel");
 
+  var tabUpload   = document.getElementById("tabUpload");
+  var tabPaste    = document.getElementById("tabPaste");
+  var panelUpload = document.getElementById("panelUpload");
+  var panelPaste  = document.getElementById("panelPaste");
+  var codeArea    = document.getElementById("codeArea");
+  var pasteOpenBtn= document.getElementById("pasteOpenBtn");
+
   var lastHtml = null;   // last file contents (string)
   var lastName = null;   // last file name
 
@@ -402,6 +481,20 @@
 
   /* ---------- core: write HTML into a fresh about:blank window ---------- */
 
+  // Tag names are assembled from parts on purpose: a literal head tag inside
+  // this inline script makes HTML post-processors (e.g. a preview proxy that
+  // injects its own scripts right after every head tag) inject in the middle
+  // of the script, which closes it early and breaks the whole page.
+  var TAGS = {
+    doc:     "<!DOCTYPE " + "html>",
+    html:    "<" + "html>",
+    htmlEnd: "<" + "/html>",
+    head:    "<" + "head>",
+    headEnd: "<" + "/head>",
+    body:    "<" + "body>",
+    bodyEnd: "<" + "/body>"
+  };
+
   // Open a blank window. MUST be called synchronously inside a real user
   // gesture (click / drop) so the browser does not block it as a popup.
   // Returns the window object, or null if the popup was blocked.
@@ -414,10 +507,10 @@
     try {
       win.document.open();
       win.document.write(
-        '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Loading…</title></head>' +
-        '<body style="margin:0;height:100vh;display:flex;align-items:center;justify-content:center;' +
-        'background:#0b1020;color:#e8ecf8;font-family:system-ui,sans-serif;">' +
-        '<p>Loading ' + escapeHtml(name || "file") + '…</p></body></html>'
+        TAGS.doc + TAGS.html + TAGS.head + '<meta charset="utf-8"><title>Loading…</title>' + TAGS.headEnd +
+        TAGS.body.replace(">", ' style="margin:0;height:100vh;display:flex;align-items:center;justify-content:center;' +
+        'background:#0b1020;color:#e8ecf8;font-family:system-ui,sans-serif;">') +
+        '<p>Loading ' + escapeHtml(name || "file") + '…</p>' + TAGS.bodyEnd + TAGS.htmlEnd
       );
       win.document.close();
     } catch (e) { /* ignore – we rewrite below anyway */ }
@@ -425,7 +518,7 @@
   }
 
   // Write the final document into an already-open window. document.open()
-  // resets it, then document.write() runs any inline <script> tags.
+  // resets it, then document.write() runs any inline script tags.
   function writeToWindow(win, html) {
     win.document.open();
     win.document.write(html);
@@ -632,6 +725,42 @@
   // Prevent the browser from navigating away if a file is dropped outside the zone.
   ["dragover", "drop"].forEach(function (evt) {
     window.addEventListener(evt, function (e) { e.preventDefault(); });
+  });
+
+  /* ---------- tabs ---------- */
+
+  function showTab(name) {
+    var paste = name === "paste";
+    tabUpload.setAttribute("aria-selected", paste ? "false" : "true");
+    tabPaste.setAttribute("aria-selected", paste ? "true" : "false");
+    panelUpload.classList.toggle("active", !paste);
+    panelPaste.classList.toggle("active", paste);
+    if (paste) codeArea.focus();
+  }
+
+  tabUpload.addEventListener("click", function () { showTab("upload"); });
+  tabPaste.addEventListener("click", function () { showTab("paste"); });
+
+  /* ---------- pasted code ---------- */
+
+  pasteOpenBtn.addEventListener("click", function () {
+    var html = codeArea.value;
+    if (!html.trim()) {
+      setStatus("Paste some HTML first, then click Open in about:blank.", "err");
+      return;
+    }
+
+    lastHtml = html;
+    lastName = "pasted.html";
+    reopenBtn.disabled = false;
+    fileChip.classList.remove("show");
+
+    if (previewMode.checked) {
+      renderInPagePreview(html);
+      setStatus("Loaded pasted HTML in the in-page preview.", "ok");
+    } else if (openInNewWindow(html, "pasted.html")) {
+      setStatus("Opened pasted HTML in a new about:blank window.", "ok");
+    }
   });
 
   setStatus("");
