@@ -16,10 +16,16 @@ curl -sS http://localhost:3000/
 so edits are served on the next request (no rebuild, no rebuild-on-reload command). Only
 `index.html` is mounted, not the repo root, so `.git` is never exposed.
 
-Verify a change in the browser: the page's real interaction is loading a file. Tick
-"Preview inside this page instead of a new window", then dispatch a `drop` event with a
-`DataTransfer` holding a `File` on `#dropZone`; `#previewWrap` gains `.show`, `#status`
-turns green and `#previewFrame` gets a `srcdoc` containing the file's HTML.
+Verify a change in the browser. The page has two tabs: `#tabUpload` (drop zone, `#dropZone`)
+and `#tabPaste` (`#codeArea` textarea + `#pasteOpenBtn`). Tick "Preview inside this page
+instead of a new window" so results stay in-page, then either dispatch a `drop` event with
+a `DataTransfer` holding a `File` on `#dropZone`, or fill `#codeArea` and click
+`#pasteOpenBtn`; `#previewWrap` gains `.show`, `#status` turns green and `#previewFrame`
+gets a `srcdoc` containing the HTML.
+
+The popup path itself (checkbox off) cannot be verified in the automated preview browser —
+it blocks the window, so the app shows its "Popup blocked … Showing preview below."
+fallback. Check that fallback and leave the real new-window behaviour to a manual click.
 
 ## Non-obvious quirk: no literal HTML tag names inside the inline script
 
