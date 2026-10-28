@@ -402,6 +402,20 @@
 
   /* ---------- core: write HTML into a fresh about:blank window ---------- */
 
+  // Tag names are assembled from parts on purpose: a literal head tag inside
+  // this inline script makes HTML post-processors (e.g. a preview proxy that
+  // injects its own scripts right after every head tag) inject in the middle
+  // of the script, which closes it early and breaks the whole page.
+  var TAGS = {
+    doc:     "<!DOCTYPE " + "html>",
+    html:    "<" + "html>",
+    htmlEnd: "<" + "/html>",
+    head:    "<" + "head>",
+    headEnd: "<" + "/head>",
+    body:    "<" + "body>",
+    bodyEnd: "<" + "/body>"
+  };
+
   // Open a blank window. MUST be called synchronously inside a real user
   // gesture (click / drop) so the browser does not block it as a popup.
   // Returns the window object, or null if the popup was blocked.
@@ -414,10 +428,10 @@
     try {
       win.document.open();
       win.document.write(
-        '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Loading…</title></head>' +
-        '<body style="margin:0;height:100vh;display:flex;align-items:center;justify-content:center;' +
-        'background:#0b1020;color:#e8ecf8;font-family:system-ui,sans-serif;">' +
-        '<p>Loading ' + escapeHtml(name || "file") + '…</p></body></html>'
+        TAGS.doc + TAGS.html + TAGS.head + '<meta charset="utf-8"><title>Loading…</title>' + TAGS.headEnd +
+        TAGS.body.replace(">", ' style="margin:0;height:100vh;display:flex;align-items:center;justify-content:center;' +
+        'background:#0b1020;color:#e8ecf8;font-family:system-ui,sans-serif;">') +
+        '<p>Loading ' + escapeHtml(name || "file") + '…</p>' + TAGS.bodyEnd + TAGS.htmlEnd
       );
       win.document.close();
     } catch (e) { /* ignore – we rewrite below anyway */ }
@@ -425,7 +439,7 @@
   }
 
   // Write the final document into an already-open window. document.open()
-  // resets it, then document.write() runs any inline <script> tags.
+  // resets it, then document.write() runs any inline script tags.
   function writeToWindow(win, html) {
     win.document.open();
     win.document.write(html);
