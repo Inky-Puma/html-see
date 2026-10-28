@@ -27,6 +27,17 @@ The popup path itself (checkbox off) cannot be verified in the automated preview
 it blocks the window, so the app shows its "Popup blocked … Showing preview below."
 fallback. Check that fallback and leave the real new-window behaviour to a manual click.
 
+## Deploying (Cloudflare Workers static assets)
+
+`wrangler.jsonc` publishes this repo as static assets (`assets.directory: "./"`, no Worker
+script), and `.assetsignore` keeps everything except `index.html` out of the upload — verify
+with `WRANGLER_LOG=debug npx wrangler deploy --dry-run` and look for `Ignoring asset:` lines.
+
+On Cloudflare Workers Builds: build command can stay empty, deploy command `npx wrangler deploy`.
+The Worker name in `wrangler.jsonc` must match the Workers project name. Deploys follow the
+project's configured branch — `main` — so changes on a `base44/*` branch only reach the live
+site once merged.
+
 ## Non-obvious quirk: no literal HTML tag names inside the inline script
 
 The whole application script is inline in `index.html`. Some HTML post-processors
